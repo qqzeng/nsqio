@@ -33,7 +33,7 @@ type Topic struct {
 	idFactory         *guidFactory
 
 	ephemeral      bool							// 即临时的 topic（#ephemeral开头），此种类型的 topic 不会进行持久化，
-												// 即使放入内存队列后，也可能被舍弃 TODO。当此 topic 所包含的所有的 channel 都被删除后，被标记为ephemeral的topic也会被删除
+												// 当此 topic 所包含的所有的 channel 都被删除后，被标记为ephemeral的topic也会被删除
 	deleteCallback func(*Topic)					// topic 被删除前的回调函数，且对 ephemeral 类型的 topic有效，并且它只在 DeleteExistingChannel 方法中被调用
 	deleter        sync.Once
 

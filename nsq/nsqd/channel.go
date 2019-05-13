@@ -53,7 +53,7 @@ type Channel struct {
 
 	// state tracking
 	clients        map[int64]Consumer					// 与此 channel 相联的 client 集合，准确而言是 Consumer 集合
-	paused         int32
+	paused         int32								// 若其 paused属性被设置，则那些订阅了此`channel`的客户端不会被推送消息
 	ephemeral      bool									// 标记此 channel 是否是临时的
 	deleteCallback func(*Channel)						// 删除回调函数（同 topic 的 deleteCallback 作用类似）
 	deleter        sync.Once
@@ -340,6 +340,8 @@ func (c *Channel) PutMessageDeferred(msg *Message, timeout time.Duration) {
 }
 
 // TouchMessage resets the timeout for an in-flight message
+// 重置正在发送的消息的超时时间，即将消息从 inFlightMessages 及 in-flight queue 中弹出
+// 然后更新其超时时间为指定的超时时间，再将消息压入到两个集合中
 func (c *Channel) TouchMessage(clientID int64, id MessageID, clientMsgTimeout time.Duration) error {
 	msg, err := c.popInFlightMessage(clientID, id)
 	if err != nil {

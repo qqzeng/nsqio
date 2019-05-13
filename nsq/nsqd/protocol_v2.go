@@ -56,9 +56,13 @@ func (p *protocolV2) IOLoop(conn net.Conn) error {
 
 	// 2. 开始循环读取 client 的请求，然后解析参数并处理
 	for {
+		// 如果在与客户端协商 negotiation过程中，客户端设置了 HeartbeatInterval，
+		// 则在正常通信情况下，若间隔超过 2*HeartbeatInterval 未收到客户端的消息，
+		// 则关闭连接。
 		if client.HeartbeatInterval > 0 {
 			client.SetReadDeadline(time.Now().Add(client.HeartbeatInterval * 2))
 		} else {
+			// 若客户端未设置 HeartbeatInterval，则读取等待不会超时。
 			client.SetReadDeadline(zeroTime)
 		}
 
@@ -217,7 +221,7 @@ func (p *protocolV2) messagePump(client *clientV2, startedChan chan bool) {
 	// with >1 clients having >1 RDY counts
 	var flusherChan <-chan time.Time
 	var sampleRate int32
-
+	// 1. 获取客户端的属性
 	subEventChan := client.SubEventChan
 	identifyEventChan := client.IdentifyEventChan
 	outputBufferTicker := time.NewTicker(client.OutputBufferTimeout)
@@ -242,18 +246,20 @@ func (p *protocolV2) messagePump(client *clientV2, startedChan chan bool) {
 
 	// signal to the goroutine that started the messagePump
 	// that we've started up
-	// 向 IOLoop goroutine 发送消息，可以继续运行
+	// 2. 向 IOLoop goroutine 发送消息，可以继续运行
 	close(startedChan)
 
-	for {
+	for {// 1. 当前 client 未准备好接消息，原因包括 subChannel为空，即此客户端未订阅任何 channel
+		// 或者客户端还未准备好接收消息，
+		// 即 ReadyCount(通过 RDY 命令设置) <= InFlightCount(已经给此客户端正在发送的消息的数量) 或 ReadyCount <= 0
+		// 刚开始进入循环是肯定会执行这个分支
 		if subChannel == nil || !client.IsReadyForMessages() {
 			// the client is not ready to receive messages...
-			// 当前 client 未准备好接消息
-			// 初始化两个消息 channel
+			// 初始化各个消息 channel
 			memoryMsgChan = nil
 			backendMsgChan = nil
 			flusherChan = nil
-			// force flush
+			// 强制刷新缓冲区
 			client.writeLock.Lock()
 			err = client.Flush()
 			client.writeLock.Unlock()
@@ -264,26 +270,26 @@ func (p *protocolV2) messagePump(client *clientV2, startedChan chan bool) {
 		} else if flushed {
 			// last iteration we flushed...
 			// do not select on the flusher ticker channel
-			// 表明上一个循环中，我们已经显式地刷新过或者刚进入循环中，
+			// 2. 表明上一个循环中，我们已经显式地刷新过
 			// 准确而言，应该上从 client.SubEventChan 中接收到了 subChannel（client订阅某个 channel 导致的）
 			// 因此 初始化 memoryMsgChan 和 backendMsgChan 两个 channel，实际上这两个 channel 即为 client 所订阅的 channel的两个消息队列
 			memoryMsgChan = subChannel.memoryMsgChan
 			backendMsgChan = subChannel.backend.ReadChan()
-			// 同时，禁止从 flusherChan 取消息
+			// 同时，禁止从 flusherChan 取消息，因为才刚刚设置接收消息的 channel，缓冲区不会数据等待刷新
 			flusherChan = nil
 		} else {
 			// we're buffered (if there isn't any more data we should flush)...
 			// select on the flusher ticker channel, too
+			// 3. 在执行到此之前，subChannel 肯定已经被设置过了，且已经从 memoryMsgChan 或 backendMsgChan 取出过消息
+			// 因此，可以准备刷新消息发送缓冲区了，即设置 flusherChan
 			memoryMsgChan = subChannel.memoryMsgChan
 			backendMsgChan = subChannel.backend.ReadChan()
 			flusherChan = outputBufferTicker.C
 		}
 
 		select {
+		// 4. 定时刷新消息发送缓冲区
 		case <-flusherChan:
-			// if this case wins, we're either starved
-			// or we won the race between other channels...
-			// in either case, force flush
 			client.writeLock.Lock()
 			err = client.Flush()
 			client.writeLock.Unlock()
@@ -291,14 +297,19 @@ func (p *protocolV2) messagePump(client *clientV2, startedChan chan bool) {
 				goto exit
 			}
 			flushed = true
+		// 5. 客户端处理消息的能力发生了变化，比如客户端刚消费了某个消息
 		case <-client.ReadyStateChan:
-		// 发现 client 订阅了某个 channel，将 subEventChan 重置为nil （此时监听两个channel已经被设置成了订阅的 channel 的两个消息队列了）TODO
+		// 6. 发现 client 订阅了某个 channel，channel 是在 SUB命令请求方法中被压入的
+		// 然后，将 subEventChan 重置为nil，重置为 nil原因表示后面不能从此 channel 中接收到消息（注意与close(channel)的区别）
+		// 而置为nil的原因是，在SUB命令请求方法中第一行即为检查此客户端是否处于 stateInit 状态，而调用 SUB 了之后，状态变为 stateSubscribed
 		case subChannel = <-subEventChan:
 			// you can't SUB anymore
 			subEventChan = nil
-		// 当 nsqd 收到 client 发送的 IDENTIFY 请求时，会设置此 client 的属性信息，然后将信息 push 到	identifyEventChan
-		// 因此此处就会收到一条消息，同样将 identifyEventChan 重置为nil TODO
-		// 更新 client 的一些设置信息
+		// 7. 当 nsqd 收到 client 发送的 IDENTIFY 请求时，会设置此 client 的属性信息，然后将信息 push 到	identifyEventChan。
+		// 因此此处就会收到一条消息，同样将 identifyEventChan 重置为nil，
+		// 这表明只能从 identifyEventChan 通道中接收一次消息，因为在一次连接过程中，只允许客户端初始化一次
+		// 在 IDENTIFY 命令处理请求中可看到在第一行时进行了检查，若此时客户端的状态不是 stateInit，则会报错。
+		// 最后，根据客户端设置的信息，更新部分属性，如心跳间隔 heartbeatTicker
 		case identifyData := <-identifyEventChan:
 			// you can't IDENTIFY anymore
 			identifyEventChan = nil
@@ -320,13 +331,13 @@ func (p *protocolV2) messagePump(client *clientV2, startedChan chan bool) {
 			}
 
 			msgTimeout = identifyData.MsgTimeout
-		// 定时发送 heartbeta 消息
+		// 8. 定时向所连接的客户端发送 heartbeat 消息
 		case <-heartbeatChan:
 			err = p.Send(client, frameTypeResponse, heartbeatBytes)
 			if err != nil {
 				goto exit
 			}
-		// 从 backendMsgChan 队列中收到了消息
+		// 9. 从 backendMsgChan 队列中收到了消息
 		case b := <-backendMsgChan:
 			// 根据 client 在与 nsqd 建立连接后，第一次 client 会向 nsqd 发送 IDENFITY 请求来提供 client 的一些信息
 			// 即为 identifyData，而 sampleRate 就包含在其中。换言之，客户端会发送一个 0-100 的数字给 nsqd，
@@ -334,7 +345,6 @@ func (p *protocolV2) messagePump(client *clientV2, startedChan chan bool) {
 			// 则 client 虽然订阅了此 channel，且此 channel 中也有消息了，但是不会发送给此 client。
 			// 这里就体现了 官方文档 中所说的，当一个 channel 被 client 订阅时，它会将收到的消息随机发送给这一组 client 中的一个
 			// 而且，就算只有一个 client，从程序中来看，也不一定能够获取到此消息，具体情况也与 client 编写的程序规则相关
-			// TODO
 			if sampleRate > 0 && rand.Int31n(100) > sampleRate {
 				continue
 			}
@@ -357,7 +367,7 @@ func (p *protocolV2) messagePump(client *clientV2, startedChan chan bool) {
 			}
 			// 重置 flused 变量
 			flushed = false
-		// 从 memoryMsgChan 队列中收到了消息
+		// 9. 从 memoryMsgChan 队列中收到了消息
 		case msg := <-memoryMsgChan:
 			if sampleRate > 0 && rand.Int31n(100) > sampleRate {
 				continue
@@ -371,6 +381,7 @@ func (p *protocolV2) messagePump(client *clientV2, startedChan chan bool) {
 				goto exit
 			}
 			flushed = false
+		// 10. 客户端退出
 		case <-client.ExitChan:
 			goto exit
 		}
@@ -657,7 +668,7 @@ func (p *protocolV2) SUB(client *clientV2, params [][]byte) ([]byte, error) {
 	// This retry-loop is a work-around for a race condition, where the
 	// last client can leave the channel between GetChannel() and AddClient().
 	// Avoid adding a client to an ephemeral channel / topic which has started exiting.
-	// 此循环是为了避免 client 订阅到正在退出的 ephemeral 的 channel 或 topic
+	// 此循环是为了避免 client 订阅到正在退出的 ephemeral 属性的 channel 或 topic
 	var channel *Channel
 	for {
 		// 4. 获取 topic 及 channel 实例
@@ -990,6 +1001,7 @@ func (p *protocolV2) DPUB(client *clientV2, params [][]byte) ([]byte, error) {
 	return okBytes, nil
 }
 
+// 为客户端重置正在发送的消息的超时时间
 func (p *protocolV2) TOUCH(client *clientV2, params [][]byte) ([]byte, error) {
 	state := atomic.LoadInt32(&client.State)
 	if state != stateSubscribed && state != stateClosing {

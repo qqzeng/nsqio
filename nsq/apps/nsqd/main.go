@@ -40,7 +40,7 @@ func (p *program) Init(env svc.Environment) error {
 	return nil
 }
 
-// 启动方法，
+// 启动方法
 func (p *program) Start() error {
 	// 1. 通过程序默认的参数构建 options 实例
 	opts := nsqd.NewOptions()
@@ -58,7 +58,7 @@ func (p *program) Start() error {
 	}
 
 	// 4. 若用户指定了自定义配置文件，则加载配置文件，读取配置文件，校验配置文件合法性
-	// 读取解析配置文件采用的是第三方库 github.com/BurntSushi/toml
+	// 读取解析配置文件采用的是第三方库 https://github.com/BurntSushi/toml
 	var cfg config
 	configFile := flagSet.Lookup("config").Value.String()
 	if configFile != "" {

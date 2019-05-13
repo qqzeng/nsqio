@@ -57,7 +57,7 @@ type NSQD struct {
 	topicMap map[string]*Topic						// nsqd 所包含的 topic 集合
 
 	clientLock sync.RWMutex							// guards clients
-	clients    map[int64]Client						// 向 nsqd 订阅的 client 的集合
+	clients    map[int64]Client						// 向 nsqd 订阅的 client 的集合，即订阅了此 nsqd 所维护的 topic 的客户端
 
 	lookupPeers atomic.Value						// nsqd 与 nsqlookupd 之间的网络连接的抽象实体
 
@@ -276,11 +276,11 @@ func (n *NSQD) Main() error {
 		})
 	}
 	// 6. 等待直到 queueScanLoop循环，lookupLoop循环以及statsdLoop，主程序才能退出
-	// 即开启了 队列scan扫描 go routine 以及  lookup 的查找 go routine
+	// 即开启了 队列scan扫描 goroutine 以及  lookup 的查找 goroutine
 	n.waitGroup.Wrap(n.queueScanLoop)
 	n.waitGroup.Wrap(n.lookupLoop)
 	if n.getOpts().StatsdAddress != "" {
-		// 还有 状态处理 go routine
+		// 还有 状态统计处理 go routine
 		n.waitGroup.Wrap(n.statsdLoop)
 	}
 
@@ -351,7 +351,7 @@ func (n *NSQD) LoadMetadata() error {
 		return fmt.Errorf("failed to parse metadata in %s - %s", fn, err)
 	}
 
-	// 3. 若文件内容不为空，则遍历所有 topic，针对每一个 topic及 channel先前保持的情况进行还原．比如是否有被 pause，最后启动 topic
+	// 3. 若文件内容不为空，则遍历所有 topic，针对每一个 topic 及 channel先前保持的情况进行还原．比如是否有被 pause，最后启动 topic
 	for _, t := range m.Topics {
 		if !protocol.IsValidTopicName(t.Name) {
 			n.logf(LOG_WARN, "skipping creation of invalid topic %s", t.Name)
@@ -513,6 +513,7 @@ func (n *NSQD) GetTopic(topicName string) *Topic {
 
 	// if loading metadata at startup, no lookupd connections yet, topic started after load
 	// 5. 若 metadata 正在启动，且暂时没有 lookupd 连接，则在加载　topic　被加载之后，启动　topic
+	// 此时内存中的两个消息队列 memoryMsgChan 和 backend 还未开始正常工作
 	if atomic.LoadInt32(&n.isLoading) == 1 {
 		return t
 	}

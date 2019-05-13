@@ -15,19 +15,21 @@ import (
 // 连接成功后需要执行的回调函数
 func connectCallback(n *NSQD, hostname string) func(*lookupPeer) {
 	return func(lp *lookupPeer) {
+		// 1. 打包 nsqd 自己的信息，主要是与网络连接相关
 		ci := make(map[string]interface{})
 		ci["version"] = version.Binary
 		ci["tcp_port"] = n.RealTCPAddr().Port
 		ci["http_port"] = n.RealHTTPAddr().Port
 		ci["hostname"] = hostname
 		ci["broadcast_address"] = n.getOpts().BroadcastAddress
-
+		// 2. 发送一个 IDENTIFY 命令请求，以提供自己的身份信息
 		cmd, err := nsq.Identify(ci)
 		if err != nil {
 			lp.Close()
 			return
 		}
 		resp, err := lp.Command(cmd)
+		// 3. 检验 IDENTIFY 请求的响应内容
 		if err != nil {
 			n.logf(LOG_ERROR, "LOOKUPD(%s): %s - %s", lp, cmd, err)
 			return
@@ -50,6 +52,7 @@ func connectCallback(n *NSQD, hostname string) func(*lookupPeer) {
 		}
 
 		// build all the commands first so we exit the lock(s) as fast as possible
+		// 4. 构建所有即将发送的 REGISTER 命令请求，用于向 nsqlookupd 注册信息 topic 和 channel 信息
 		var commands []*nsq.Command
 		n.RLock()
 		for _, topic := range n.topicMap {
@@ -64,7 +67,7 @@ func connectCallback(n *NSQD, hostname string) func(*lookupPeer) {
 			topic.RUnlock()
 		}
 		n.RUnlock()
-
+		// 5. 最后，遍历 REGISTER 命令集合，依次执行它们，并忽略返回结果（当然肯定要检测请求是否执行成功）
 		for _, cmd := range commands {
 			n.logf(LOG_INFO, "LOOKUPD(%s): %s", lp, cmd)
 			_, err := lp.Command(cmd)
