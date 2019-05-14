@@ -22,25 +22,27 @@ type Topic struct {
 	sync.RWMutex								// guards channelMap
 
 	name              string					// topic 名称
-	channelMap        map[string]*Channel		// 此 topic 所包含的 channel 集合
+	channelMap        map[string]*Channel		// topic 所包含的 channel 集合
 	backend           BackendQueue				// 代表持久化存储的通道
 	memoryMsgChan     chan *Message				// 代表消息在内存中的通道
 	startChan         chan int					// 消息处理循环开关
-	exitChan          chan int
+	exitChan          chan int					// topic 消息处理循环退出开关
 	channelUpdateChan chan int					// 消息更新的开关
-	waitGroup         util.WaitGroupWrapper
-	exitFlag          int32						// 其会在删除一个topic时被设置，且若被设置，则 putMessage(s)操作会返回错误，拒绝写入消息
-	idFactory         *guidFactory
-
-	ephemeral      bool							// 即临时的 topic（#ephemeral开头），此种类型的 topic 不会进行持久化，
-												// 当此 topic 所包含的所有的 channel 都被删除后，被标记为ephemeral的topic也会被删除
-	deleteCallback func(*Topic)					// topic 被删除前的回调函数，且对 ephemeral 类型的 topic有效，并且它只在 DeleteExistingChannel 方法中被调用
+	waitGroup         util.WaitGroupWrapper		// waitGroup 的一个 wrapper
+	// 其会在删除一个topic时被设置，且若被设置，则 putMessage(s)操作会返回错误，拒绝写入消息
+	exitFlag          int32
+	idFactory         *guidFactory				// 用于生成客户端实例的ID
+	// 临时的 topic（#ephemeral开头），此种类型的 topic 不会进行持久化，
+	// 当此 topic 所包含的所有的 channel 都被删除后，被标记为ephemeral的topic也会被删除
+	ephemeral      bool
+	// topic 被删除前的回调函数，且对 ephemeral 类型的 topic有效，并且它只在 DeleteExistingChannel 方法中被调用
+	deleteCallback func(*Topic)
 	deleter        sync.Once
-
-	paused    int32								// 标记此 topic 是否有被 paused，若被 paused，则其不会将消息写入到其关联的 channel 的消息队列
+	// 标记此 topic 是否有被 paused，若被 paused，则其不会将消息写入到其关联的 channel 的消息队列
+	paused    int32
 	pauseChan chan int
 
-	ctx *context								// nsqd 实例
+	ctx *context								// nsqd 实例的 wrapper
 }
 
 // Topic constructor
@@ -60,7 +62,8 @@ func NewTopic(topicName string, ctx *context, deleteCallback func(*Topic)) *Topi
 		deleteCallback:    deleteCallback,
 		idFactory:         NewGUIDFactory(ctx.nsqd.getOpts().ID),
 	}
-	// 2. 标记那些带有 ephemeral 的 topic，并为它们构建一个 Dummy BackendQueue，因为这些 topic 所包含的的消息不会被持久化，因此不需要持久化队列 BackendQueue。
+	// 2. 标记那些带有 ephemeral 的 topic，并为它们构建一个 Dummy BackendQueue，
+	// 因为这些 topic 所包含的的消息不会被持久化，因此不需要持久化队列 BackendQueue。
 	if strings.HasSuffix(topicName, "#ephemeral") {
 		t.ephemeral = true
 		t.backend = newDummyBackendQueue()
@@ -76,14 +79,16 @@ func NewTopic(topicName string, ctx *context, deleteCallback func(*Topic)) *Topi
 			ctx.nsqd.getOpts().MaxBytesPerFile,						// 存储文件的最大字节数
 			int32(minValidMsgLength),								// 最小的有效消息的长度
 			int32(ctx.nsqd.getOpts().MaxMsgSize)+minValidMsgLength, // 最大的有效消息的长度
-			ctx.nsqd.getOpts().SyncEvery,							// 单次同步刷新消息的数量，即当消息数量达到 SyncEvery 的数量时，需要执行刷新动作（否则会留在操作系统缓冲区）
+			// 单次同步刷新消息的数量，即当消息数量达到 SyncEvery 的数量时，
+			// 需要执行刷新动作（否则会留在操作系统缓冲区）
+			ctx.nsqd.getOpts().SyncEvery,
 			ctx.nsqd.getOpts().SyncTimeout,							// 两次同步刷新的时间间隔，即两次同步操作之间的最大间隔
 			dqLogf,													// 日志
 		)
 	}
 	// 4. 执行 messagePump 方法，即 开启消息监听 go routine
 	t.waitGroup.Wrap(t.messagePump)
-	// 5. 通知 lookupd 有新的 topic 产生 TODO #
+	// 5. 通知 nsqlookupd 有新的 topic 产生
 	t.ctx.nsqd.Notify(t)
 
 	return t
@@ -441,6 +446,7 @@ func (t *Topic) exit(deleted bool) error {
 	return t.backend.Close()
 }
 
+// 清空内存消息队列和持久化存储消息队列中的消息
 func (t *Topic) Empty() error {
 	for {
 		select {

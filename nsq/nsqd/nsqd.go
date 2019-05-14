@@ -520,24 +520,25 @@ func (n *NSQD) GetTopic(topicName string) *Topic {
 
 	// if using lookupd, make a blocking call to get the topics, and immediately create them.
 	// this makes sure that any message received is buffered to the right channels
+	// TODO
 	lookupdHTTPAddrs := n.lookupdHTTPAddrs()
 	if len(lookupdHTTPAddrs) > 0 {
-		// 5.1 从指定的 lookupd 及 topic 所获取的 channel 的集合
-		// lookupd 存储所有之前此 topic 创建的 channel 信息，因此需要加载消息
+		// 5.1 从指定的 nsqlookupd 及 topic 所获取的 channel 的集合
+		// nsqlookupd 存储所有之前此 topic 创建的 channel 信息，因此需要加载消息
 		channelNames, err := n.ci.GetLookupdTopicChannels(t.name, lookupdHTTPAddrs)
 		if err != nil {
 			n.logf(LOG_WARN, "failed to query nsqlookupd for channels to pre-create for topic %s - %s", t.name, err)
 		}
-		// 5.2 对那些非 ephemeral 的 channel，创建对应的实例（因为没有使用返回值，因此纯粹是更新了内在中的几个 chan 结构）
+		// 5.2 对那些非 ephemeral 的 channel，创建对应的实例（因为没有使用返回值，因此纯粹是更新了内在中的memoryMsgChan和backend结构）
 		for _, channelName := range channelNames {
 			// 对于临时的 channel，则不需要创建，使用的时候再创建
 			if strings.HasSuffix(channelName, "#ephemeral") {
 				continue // do not create ephemeral channel with no consumer client
 			} // 5.3 根据 channel name 获取 channel 实例，且有可能是新建的
-			// 且在 GetChannel 中若是新建了一个 channel，则通知 topic 的后台消息协程去处理 channel 的更新事件
-			// 之所以在示查询到指定 channel 的情况下，新建 channel，是为了保证消息尽可能不被丢失，
+			// 若是新建了一个 channel，则通知 topic 的后台消息协程去处理 channel 的更新事件
+			// 之所以在查询到指定 channel 的情况下，新建 channel，是为了保证消息尽可能不被丢失，
 			// 比如在 nsq 重启时，需要在重启的时刻创建那些 channel，避免生产者生产的消息
-			// 不能被放到 channel 中，在这种情况下，只能等待消费者来指定的 channel 中获取消息才会创建。
+			// 不能被放到 channel 中，因为在这种情况下，只能等待消费者来指定的 channel 中获取消息才会创建。
 			t.GetChannel(channelName)
 		}
 	} else if len(n.getOpts().NSQLookupdTCPAddresses) > 0 {
@@ -595,6 +596,7 @@ func (n *NSQD) Notify(v interface{}) {
 	// since the in-memory metadata is incomplete,
 	// should not persist metadata while loading it.
 	// nsqd will call `PersistMetadata` it after loading
+	// 考虑到若在 nsqd 刚启动处于加载元数据，则此时数据并不完整，因此不会在此时执行持久化操作
 	persist := atomic.LoadInt32(&n.isLoading) == 0
 	n.waitGroup.Wrap(func() {
 		// by selecting on exitChan we guarantee that

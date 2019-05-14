@@ -673,7 +673,7 @@ func (d *diskQueue) ioLoop() {
 			}
 			count = 0
 		}
-		// 3. 若当前还有数据（消息）可供消息（即当前读取的文件编号 readFileNum < 目前已经写入的文件编号 writeFileNum
+		// 3. 若当前还有数据（消息）可供消费（即当前读取的文件编号 readFileNum < 目前已经写入的文件编号 writeFileNum
 		// 或者 当前的读取索引 readPos < 当前的写的索引）
 		// 因为初始化读每一个文件时都需要重置 readPos = 0
 		if (d.readFileNum < d.writeFileNum) || (d.readPos < d.writePos) {
