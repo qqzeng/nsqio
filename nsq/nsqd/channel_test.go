@@ -200,7 +200,7 @@ func TestChannelEmptyConsumer(t *testing.T) {
 func TestMaxChannelConsumers(t *testing.T) {
 	opts := NewOptions()
 	opts.Logger = test.NewTestLogger(t)
-	opts.MaxChannelConsumers = 1
+	opts.MaxChannelConsumers = 3
 	tcpAddr, _, nsqd := mustStartNSQD(opts)
 	defer os.RemoveAll(opts.DataPath)
 	defer nsqd.Exit()

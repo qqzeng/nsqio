@@ -35,27 +35,27 @@ type Consumer interface {
 // messages, timeouts, requeuing, etc.
 type Channel struct {
 	// 64bit atomic vars need to be first for proper alignment on 32bit platforms
-	requeueCount uint64									// 需要重新排队的消息数
-	messageCount uint64									// 接收到的消息的总数
-	timeoutCount uint64									// 正在发送的消息的数量
+	requeueCount uint64					// 需要重新排队的消息数
+	messageCount uint64					// 接收到的消息的总数
+	timeoutCount uint64					// 正在发送的消息的数量
 
-	sync.RWMutex										// guards
+	sync.RWMutex						// guards
 
-	topicName string									// 其所对应的 topic 名称
-	name      string									// channel 名称
-	ctx       *context									// nsqd 实例
+	topicName string					// 其所对应的 topic 名称
+	name      string					// channel 名称
+	ctx       *context					// nsqd 实例
 
-	backend BackendQueue								// 后端消息持久化的队列
-
-	memoryMsgChan chan *Message							// 内存消息通道。 其关联的 topic 会向此 channel 发送消息，且所有订阅的 client 会开启一个 go routine 订阅此 channel
-	exitFlag      int32									// 退出标识（同 topic 的 exitFlag 作用类似）
+	backend BackendQueue				// 后端消息持久化的队列
+	// 内存消息通道。 其关联的 topic 会向此 channel 发送消息，且所有订阅的 client 会开启一个 go routine 订阅此 channel
+	memoryMsgChan chan *Message
+	exitFlag      int32					// 退出标识（同 topic 的 exitFlag 作用类似）
 	exitMutex     sync.RWMutex
 
 	// state tracking
-	clients        map[int64]Consumer					// 与此 channel 相联的 client 集合，准确而言是 Consumer 集合
-	paused         int32								// 若其 paused属性被设置，则那些订阅了此`channel`的客户端不会被推送消息
-	ephemeral      bool									// 标记此 channel 是否是临时的
-	deleteCallback func(*Channel)						// 删除回调函数（同 topic 的 deleteCallback 作用类似）
+	clients        map[int64]Consumer	// 与此 channel 相联的 client 集合，准确而言是 Consumer 集合
+	paused         int32				// 若其 paused属性被设置，则那些订阅了此`channel`的客户端不会被推送消息
+	ephemeral      bool					// 标记此 channel 是否是临时的
+	deleteCallback func(*Channel)		// 删除回调函数（同 topic 的 deleteCallback 作用类似）
 	deleter        sync.Once
 
 	// Stats tracking
@@ -65,12 +65,13 @@ type Channel struct {
 	// 延迟投递消息集合，消息体会放入 deferredPQ，并且由后台的queueScanLoop协程来扫描消息
 	// 将过期的消息照常使用 c.put(msg) 发送出去。
 	deferredMessages map[MessageID]*pqueue.Item
-	deferredPQ       pqueue.PriorityQueue				// 被延迟投递消息集合 对应的 优先级队列 PriorityQueue
-	deferredMutex    sync.Mutex							// guards deferredMessages
-	// 正在发送中的消息记录集合，直到收到客户端的 FIN 才删除，否则一旦超过 timeout，则重传消息。（因此client需要对消息做去重处理 de-duplicate）
+	deferredPQ       pqueue.PriorityQueue		// 被延迟投递消息集合 对应的 优先级队列 PriorityQueue
+	deferredMutex    sync.Mutex					// guards deferredMessages
+	// 正在发送中的消息记录集合，直到收到客户端的 FIN 才删除，否则一旦超过 timeout，则重传消息。
+	// （因此client需要对消息做去重处理 de-duplicate）
 	inFlightMessages map[MessageID]*Message
-	inFlightPQ       inFlightPqueue						// 正在发送中的消息记录集合 对应的 inFlightPqueue
-	inFlightMutex    sync.Mutex							// guards inFlightMessages
+	inFlightPQ       inFlightPqueue				// 正在发送中的消息记录集合 对应的 inFlightPqueue
+	inFlightMutex    sync.Mutex					// guards inFlightMessages
 }
 
 // NewChannel creates a new instance of the Channel type and returns a pointer
@@ -118,7 +119,7 @@ func NewChannel(topicName string, channelName string, ctx *context,
 			dqLogf,
 		)
 	}
-	// 5. 通知 lookupd 添加注册信息 TODO
+	// 5. 通知 lookupd 添加注册信息
 	c.ctx.nsqd.Notify(c)
 
 	return c
@@ -146,11 +147,13 @@ func (c *Channel) Exiting() bool {
 }
 
 // Delete empties the channel and closes
+// 删除此 channel，清空所有消息，然后关闭
 func (c *Channel) Delete() error {
 	return c.exit(true)
 }
 
 // Close cleanly closes the Channel
+// 只是将三个消息队列中的消息刷盘，然后关闭
 func (c *Channel) Close() error {
 	return c.exit(false)
 }
@@ -159,16 +162,13 @@ func (c *Channel) Close() error {
 func (c *Channel) exit(deleted bool) error {
 	c.exitMutex.Lock()
 	defer c.exitMutex.Unlock()
-
+	// 1. 保证还未被设置 exitFlag，即还在运行中，同时设置 exitFlag
 	if !atomic.CompareAndSwapInt32(&c.exitFlag, 0, 1) {
 		return errors.New("exiting")
 	}
-
+	// 2. 若需要删除数据，则通知 nsqlookupd，有 channel 被删除
 	if deleted {
 		c.ctx.nsqd.logf(LOG_INFO, "CHANNEL(%s): deleting", c.name)
-
-		// since we are explicitly deleting a channel (not just at system exit time)
-		// de-register this from the lookupd
 		c.ctx.nsqd.Notify(c)
 	} else {
 		c.ctx.nsqd.logf(LOG_INFO, "CHANNEL(%s): closing", c.name)
@@ -176,19 +176,23 @@ func (c *Channel) exit(deleted bool) error {
 
 	// this forceably closes client connections
 	c.RLock()
+	// 3. 强制关闭所有订阅了此 channel 的客户端
 	for _, client := range c.clients {
 		client.Close()
 	}
 	c.RUnlock()
-
+	// 4. 清空此 channel 所维护的内存消息队列和持久化存储消息队列中的消息
 	if deleted {
 		// empty the queue (deletes the backend files, too)
 		c.Empty()
+		// 5. 删除持久化存储消息队列中的消息
 		return c.backend.Delete()
 	}
 
 	// write anything leftover to disk
+	// 6. 强制将内存消息队列、以及两个发送消息优先级队列中的消息写到持久化存储中
 	c.flush()
+	// 7. 关闭持久化存储消息队列
 	return c.backend.Close()
 }
 
@@ -219,6 +223,7 @@ finish:
 
 // flush persists all the messages in internal memory buffers to the backend
 // it does not drain inflight/deferred because it is only called in Close()
+// 将未消费的消息都写到持久化存储中，主要包括三个消息集合：memoryMsgChan、inFlightMessages和deferredMessages
 func (c *Channel) flush() error {
 	var msgBuf bytes.Buffer
 
@@ -226,7 +231,7 @@ func (c *Channel) flush() error {
 		c.ctx.nsqd.logf(LOG_INFO, "CHANNEL(%s): flushing %d memory %d in-flight %d deferred messages to backend",
 			c.name, len(c.memoryMsgChan), len(c.inFlightMessages), len(c.deferredMessages))
 	}
-
+	// 1. 将内存消息队列中的积压的消息刷盘
 	for {
 		select {
 		case msg := <-c.memoryMsgChan:
@@ -239,6 +244,7 @@ func (c *Channel) flush() error {
 		}
 	}
 
+	// 2. 将还未发送出去的消息 inFlightMessages 也写到持久化存储
 finish:
 	c.inFlightMutex.Lock()
 	for _, msg := range c.inFlightMessages {
@@ -248,7 +254,7 @@ finish:
 		}
 	}
 	c.inFlightMutex.Unlock()
-
+	// 3. 将被推迟发送的消息集合中的 deferredMessages 消息也到持久化存储
 	c.deferredMutex.Lock()
 	for _, item := range c.deferredMessages {
 		msg := item.Value.(*Message)

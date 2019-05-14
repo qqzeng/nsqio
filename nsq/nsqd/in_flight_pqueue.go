@@ -63,7 +63,8 @@ func (pq *inFlightPqueue) Remove(i int) *Message {
 }
 
 // 若堆顶元素的 pri 大于此时的 timestamp，则返回　nil, 及二者的差值
-// 否则返回堆顶元素, 0
+// 此种情况表示堆中最需要发送的消息都还不能被发送，未到发送时间。
+// 否则返回堆顶元素, 0，表示至少堆顶元素是需要发送了
 func (pq *inFlightPqueue) PeekAndShift(max int64) (*Message, int64) {
 	if len(*pq) == 0 {
 		return nil, 0

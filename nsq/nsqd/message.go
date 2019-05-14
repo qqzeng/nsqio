@@ -23,8 +23,8 @@ type Message struct {
 	Attempts  uint16				// 消息重复投递次数
 
 	// for in-flight handling
-	deliveryTS time.Time			// client 投递消息的时间戳
-	clientID   int64				// 发送此消息的 client ID
+	deliveryTS time.Time			// 投递消息的时间戳
+	clientID   int64				// 接收此消息的 client ID
 	pri        int64				// 消息的优先级（即消息被处理的 deadline 时间戳）
 	index      int					// 当前消息在 priority queue 中的索引
 	deferred   time.Duration		// 若消息被延迟，则为延迟时间
