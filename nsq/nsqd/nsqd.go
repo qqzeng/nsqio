@@ -638,18 +638,19 @@ func (n *NSQD) channels() []*Channel {
 //
 // 	1 <= pool <= min(num * 0.25, QueueScanWorkerPoolMax)
 //
-// 调整 queueScanWorker 的数量。
+// 调整 queueScanWorker 的数量
 func (n *NSQD) resizePool(num int, workCh chan *Channel, responseCh chan bool, closeCh chan int) {
-	// 1. 根据 channel 的数量来设置合适的 pool size，默认为 1/4 的 channel 数量。
+	// 1. 根据 channel 的数量来设置合适的 pool size，默认为 1/4 的 channel 数量
 	idealPoolSize := int(float64(num) * 0.25)
 	if idealPoolSize < 1 {
 		idealPoolSize = 1
 	} else if idealPoolSize > n.getOpts().QueueScanWorkerPoolMax {
 		idealPoolSize = n.getOpts().QueueScanWorkerPoolMax
 	}
-	// 2. 开启一个循环，直到设置的 pool size 同实际的 pool size 相同才退出。
-	// 否则，若理想值更大，则扩展已有的 queueScanWorker 的数量，即在一个单独的 goroutine 中调用一次 nsqd.queueScanWorker 方法（开启了一个循环）
-	// 反之， 往 closeCh 中 push 一条消息，强制 queueScanWorker goroutine 退出
+	// 2. 开启一个循环，直到理想的 pool size 同实际的 pool size 相同才退出。
+	// 否则，若理想值更大，则需扩展已有的 queueScanWorker 的数量，
+		// 即在一个单独的 goroutine 中调用一次 nsqd.queueScanWorker 方法（开启了一个循环）。
+	// 反之， 需要减少已有的 queueScanWorker 的数量，即往 closeCh 中 push 一条消息，强制 queueScanWorker goroutine 退出
 	for {
 		if idealPoolSize == n.poolSize {
 			break
@@ -670,24 +671,33 @@ func (n *NSQD) resizePool(num int, workCh chan *Channel, responseCh chan bool, c
 // queueScanWorker receives work (in the form of a channel) from queueScanWorker
 // and processes the deferred and in-flight queues
 // 在 queueScanLoop 中处理 channel 的具体就是由 queueScanWorker 来负责。
-// 调用此方法 queueScanWorker 即表示新增一个  queueScanWorker 来处理 channel
-// 一旦开始工作 (从 workCh 中收到了信号， 即 dirty 的 channel 的数量超过 20个)，则循环的处理 in-flight queue 及 deferred queue，
-// 并将处理结果（即是否是 dirty）通过 reponseCh 反馈给 queueScanWorker。
+// 调用方法 queueScanWorker 即表示新增一个  queueScanWorker goroutine 来处理 channel。
+// 一旦开始工作 (从 workCh 中收到了信号， 即 dirty 的 channel 的数量达到阈值)，
+// 则循环处理 in-flight queue 和 deferred queue 中的消息，
+// 并将处理结果（即是否是 dirty channel）通过 reponseCh 反馈给 queueScanWorker。
 func (n *NSQD) queueScanWorker(workCh chan *Channel, responseCh chan bool, closeCh chan int) {
 	for {
 		select {
+		// 开始处理两个消息队列中的消息
 		case c := <-workCh:
 			now := time.Now().UnixNano()
 			dirty := false
-			if c.processInFlightQueue(now) { // 若返回 true，则表明　in-flight 优先队列中有需要处理的　message，
-											// 　因此其会将消息写入到　内存队列 memoryMsgChan　或后端持久化　backend
+			// 若返回true，则表明　in-flight 优先队列中有存在处理超时的消息，
+			// 因此将消息再次写入到　内存队列 memoryMsgChan　或 后端持久化　backend
+			// 等待消息被重新投递给消费者（重新被加入到 in-flight queue）
+			if c.processInFlightQueue(now) {
 				dirty = true
 			}
-			if c.processDeferredQueue(now) { // 若返回 true，则表明　deferred 优先队列中有需要处理的　message
-											// 　因此其会将消息写入到　内存队列 memoryMsgChan　或后端持久化　backend
+			// 若返回 true，则表明　deferred 优先队列中存在延时时间已到的消息，
+			// 因此需要将此消息从 deferred queue 中移除，
+			// 并将消息重新写入到　内存队列 memoryMsgChan　或后端持久化　backend
+			// 等待消息被正式投递给消费者 （正式被加入到 in-flight queue）
+			if c.processDeferredQueue(now) {
 				dirty = true
 			}
+			// 报告 queueScanLoop 主循环，发现一个 dirty channel
 			responseCh <- dirty
+		// 退出处理循环，缩减 queueScanWorker 数量时，被调用
 		case <-closeCh:
 			return
 		}
@@ -722,23 +732,25 @@ func (n *NSQD) queueScanLoop() {
 
 	workTicker := time.NewTicker(n.getOpts().QueueScanInterval)
 	refreshTicker := time.NewTicker(n.getOpts().QueueScanRefreshInterval)
-	// 2. 获取 nsqd 所包含的 channel 集合
+	// 2. 获取 nsqd 所包含的 channel 集合，一个 topic 包含多个 channel，而一个 nsqd 实例可包含多个 topic 实例
 	channels := n.channels()
 	n.resizePool(len(channels), workCh, responseCh, closeCh)
 
+	// 3. 这个循环中的逻辑就是依据配置参数，反复处理 nsqd 所维护的 topic 集合所关联的 channel 中的消息
+	// 即循环处理将 channel 从 topic 接收到的消息，发送给订阅了对应的 channel 的客户端
 	for {
 		select {
-		// 每过 QueueScanInterval 时间（默认100ms），则开始随机挑选 QueueScanSelectionCount 个 channel。转到 loop: 开始执行
+		// 3.1 每过 QueueScanInterval 时间（默认100ms），则开始随机挑选 QueueScanSelectionCount 个 channel。转到 loop: 开始执行
 		case <-workTicker.C:
-			if len(channels) == 0 {
+			if len(channels) == 0 { // 此 nsqd 没有包含任何 channel　实例当然就不用处理了
 				continue
 			}
-		// 每过 QueueScanRefreshInterval 时间（默认5s），则调整 pool 的大小，即调整开启的 queueScanWorker 的数量为 pool 的大小
+		// 3.2 每过 QueueScanRefreshInterval 时间（默认5s），则调整 pool 的大小，即调整开启的 queueScanWorker 的数量为 pool 的大小
 		case <-refreshTicker.C:
 			channels = n.channels()
 			n.resizePool(len(channels), workCh, responseCh, closeCh)
 			continue
-		// nsqd 已退出
+		// 3.3 nsqd 已退出
 		case <-n.exitChan:
 			goto exit
 		}
@@ -747,22 +759,25 @@ func (n *NSQD) queueScanLoop() {
 		if num > len(channels) {
 			num = len(channels)
 		}
-
+		// 3.4 调用 util.UniqRands 函数，随机选取 num（QueueScanSelectionCount 默认20个）channel
+		// 将它们 push 到 workCh 通道，queueScanWorker 中会收到此消息，然后立即处理 in-flight queue 和 deferred queue 中的息
+		// 注意，因为这里是随机抽取 channel 因此，有可能被选中的 channel 中并没有消息
 	loop:
 		for _, i := range util.UniqRands(num, len(channels)) {
 			workCh <- channels[i]
 		}
 
-		// 统计 dirty 的 channel 的数量，若其数量超过配置的 QueueScanDirtyPercent（默认为25%）
-		// 则调用 util.UniqRands 函数，随机选取 num（QueueScanSelectionCount 默认20个）channel
-		// 将它们 push 到 workCh 通道，queueScanWorker 中会收到此消息，然后调用处理 in-flight queue 和 deferred queue 中的消息
+		// 3.5 统计 dirty 的 channel 的数量， responseCh 管道在上面的 nsqd.resizePool 方法中传递给了 len(channels) * 0.25 个 queueScanWorker
+		// 它们会在循环中反复查看两个消息优先级队列中是否有消息等待被处理： inFlightPQ 和 deferredPQ。
+		// （当 topic 将发送给 channel 时， channel 会将消息放入两个消息队列中 memoryMsgChan & backend，
+		// 然后把进一步入放到 inFlightPQ 或 deferredPQ 中）
 		numDirty := 0
 		for i := 0; i < num; i++ {
 			if <-responseCh {
 				numDirty++
 			}
 		}
-
+		// 3.6 若其 dirtyNum 的比例超过配置的 QueueScanDirtyPercent（默认为25%）
 		if float64(numDirty)/float64(num) > n.getOpts().QueueScanDirtyPercent {
 			goto loop
 		}

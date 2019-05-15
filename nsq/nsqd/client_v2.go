@@ -363,7 +363,7 @@ func (c *clientV2) PublishedMessage(topic string, count uint64) {
 	c.metaLock.Unlock()
 }
 
-// 正在投递的消息的数量减1
+// 超时投递的消息的数量减1
 func (c *clientV2) TimedOutMessage() {
 	atomic.AddInt64(&c.InFlightCount, -1)
 	c.tryUpdateReadyState()

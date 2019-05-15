@@ -195,6 +195,7 @@ func (t *Topic) DeleteExistingChannel(channelName string) error {
 
 // PutMessage writes a Message to the queue
 // 将消息写入消息队列，在 exitFlag 为0时才进行（一般由消费者 producers 来调用，即向 topic 中生产消息）
+// 此方法由 httpServer.PUB 或 protocolV2.PUB 方法中调用，即生产者通过 http/tcp 投递消息到 topic
 func (t *Topic) PutMessage(m *Message) error {
 	t.RLock()
 	defer t.RUnlock()
@@ -280,6 +281,7 @@ func (t *Topic) messagePump() {
 	var backendChan chan []byte
 
 	// do not pass messages before Start(), but avoid blocking Pause() or GetChannel()
+	// 1. 等待开启 topic 消息处理循环，即等待调用 topic.Start，在 nsqd.GetTopic 和 nsqd.LoadMetadata 方法中调用
 	for {
 		select {
 		case <-t.channelUpdateChan:
@@ -288,13 +290,15 @@ func (t *Topic) messagePump() {
 			continue
 		case <-t.exitChan:
 			goto exit
-		// 在 nsqd.Main 中最后一个阶段会开启消息处理循环（处理由客户端（producers）向 topci 投递的消息）
+		// 在 nsqd.Main 中最后一个阶段会开启消息处理循环 topic.Start（处理由客户端（producers）向 topci 投递的消息）
+		// 在此之前的那些信号全部忽略
 		case <-t.startChan:
 		}
 		break
 	}
 	t.RLock()
-	// 根据 channelMap 初始化两个通道memoryMsgChan，backendChan
+	// 2. 根据 topic.channelMap 初始化两个通道 memoryMsgChan，backendChan
+	// 并且保证 topic.channelMap 存在 channel，且 topic 未被 paused
 	for _, c := range t.channelMap {
 		chans = append(chans, c)
 	}
@@ -304,11 +308,11 @@ func (t *Topic) messagePump() {
 		backendChan = t.backend.ReadChan()
 	}
 
-	// 消息处理主循环
+	// 3. topic 处理消息的主循环
 	for {
 		select {
-		// 从内存消息队列 memoryMsgChan 或 持久化存储 backend 中收到消息
-		// 则将消息解码，然后会将此消息 push 到此 topic 关联的所有 channel
+		// 3.1 从内存消息队列 memoryMsgChan 或 持久化存储 backend 中收到消息
+		// 则将消息解码，然后会将消息 push 到此 topic 关联的所有 channel
 		case msg = <-memoryMsgChan:
 		case buf = <-backendChan:
 			msg, err = decodeMessage(buf)
@@ -316,7 +320,8 @@ func (t *Topic) messagePump() {
 				t.ctx.nsqd.logf(LOG_ERROR, "failed to decode message - %s", err)
 				continue
 			}
-		// 当从 channelUpdateChan 读取到消息时，表明有 channel 更新，比如创建了新的消息，因此需要重新初始化 memoryMsgChan及 backendChan
+		// 3.2 当从 channelUpdateChan 读取到消息时，表明有 channel 更新，比如创建了新的 channel，
+		// 因此需要重新初始化 memoryMsgChan及 backendChan
 		case <-t.channelUpdateChan:
 			chans = chans[:0]
 			t.RLock()
@@ -332,7 +337,7 @@ func (t *Topic) messagePump() {
 				backendChan = t.backend.ReadChan()
 			}
 			continue
-		// 当收到 pause 消息时，则将 memoryMsgChan及backendChan置为 nil，注意不能 close，
+		// 3.3 当收到 pause 消息时，则将 memoryMsgChan及backendChan置为 nil，注意不能 close，
 		// 二者的区别是 nil的chan不能接收消息了，但不会报错。而若从一个已经 close 的 chan 中尝试取消息，则会 panic。
 		case <-t.pauseChan:
 			// 当 topic 被 paused 时，其不会将消息投递到 channel 的消息队列
@@ -344,10 +349,11 @@ func (t *Topic) messagePump() {
 				backendChan = t.backend.ReadChan()
 			}
 			continue
+		// 3.4 当调用 topic.exit 时会收到信号，以终止 topic 的消息处理循环
 		case <-t.exitChan:
 			goto exit
 		}
-		// 当从 memoryMsgChan 或 backendChan 中 pull 到一个 msg 后，会执行这里：
+		// 4. 当从 memoryMsgChan 或 backendChan 中 pull 到一个 msg 后，会执行这里：
 		// 遍历 channelMap 中的每一个 channel，将此 msg 拷贝到 channel 中的后备队列。
 		// 注意，因为每个 channel 需要一个独立 msg，因此需要在拷贝时需要创建 msg 的副本
 		// 同时，针对 msg 是否需要被延时投递来选择将 msg 放到延时队列 deferredMessages中还是普通的队列中
@@ -357,16 +363,19 @@ func (t *Topic) messagePump() {
 			// needs a unique instance but...
 			// fastpath to avoid copy if its the first channel
 			// (the topic already created the first copy)
-			if i > 0 { // 若此 topic 只有一个 channel，则明显不需要显式地拷贝了
+			if i > 0 { // 若此 topic 只有一个 channel，则不需要显式地拷贝了
 				chanMsg = NewMessage(msg.ID, msg.Body)
 				chanMsg.Timestamp = msg.Timestamp
 				chanMsg.deferred = msg.deferred
 			}
-			if chanMsg.deferred != 0 { // 将 msg push 到 channel 所维护的延时消息队列 deferred queue
+			// 将 msg push 到 channel 所维护的延时消息队列 deferred queue
+			// 等待消息的延时时间走完后，会把消息进一步放入到 in-flight queue 中
+			if chanMsg.deferred != 0 {
 				channel.PutMessageDeferred(chanMsg, chanMsg.deferred)
 				continue
 			}
-			err := channel.PutMessage(chanMsg) // 将 msg push 到普通消息队列
+			// 将 msg push 到普通消息队列 in-flight queue
+			err := channel.PutMessage(chanMsg)
 			if err != nil {
 				t.ctx.nsqd.logf(LOG_ERROR,
 					"TOPIC(%s) ERROR: failed to put msg(%s) to channel(%s) - %s",

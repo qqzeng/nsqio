@@ -480,7 +480,7 @@ func (c *Channel) StartInFlightTimeout(msg *Message, clientID int64, timeout tim
 
 // 将 message 加入到 deferred queue 中，等待被 queueScanWorker 处理
 func (c *Channel) StartDeferredTimeout(msg *Message, timeout time.Duration) error {
-	// 1. 计算超时超时戳，作为 priority
+	// 1. 计算超时超时戳，作为 Priority
 	absTs := time.Now().Add(timeout).UnixNano()
 	// 2. 构造 item
 	item := &pqueue.Item{Value: msg, Priority: absTs}
@@ -592,7 +592,9 @@ func (c *Channel) processDeferredQueue(t int64) bool {
 	dirty := false
 	for {
 		// 2.1 从队列中弹出最早被处理的消息，即堆顶元素（依据 Message.priority）
-		// 若堆顶元素 deadline 未到（即 meesage.Priority > t）则返回空，表明此延迟消息还不能被添加到消息队列中，还需要继续被延迟
+		// 若堆顶元素 deadline 未到（即 item.Priority > t）则返回空
+		// 注意 item.Priority 表示的是延迟的时间，并非消息处理的 deadline
+		// 表明此延迟消息的延迟时间还未走完（还需要继续延时），因此不能将它放入到
 		c.deferredMutex.Lock()
 		item, _ := c.deferredPQ.PeekAndShift(t)
 		c.deferredMutex.Unlock()
@@ -601,13 +603,16 @@ func (c *Channel) processDeferredQueue(t int64) bool {
 			goto exit
 		}
 		dirty = true
-		// 2.2 否则，表明此消息已经达到了其 deadline了，即从 deferred message 字典中删除对应的消息，将消息添加到消息队列中
+		// 2.2 否则，表明此消息已经达到了延时处理的 deadline了（即可以开始投递给客户端了），
+		// 因此需要从 deferred message 字典中删除对应的消息，将其重新添加到 channel 的消息队列中
+		// 这里啰嗦一句，此消息是在 topic.messagePum 主循环中被 push 到 channel.deferredPQ 中的
+		// 因此，延时时间已到，需要将其重新加入到正常的消息发送队列 channel.inflightPQ（经过 memoryMsgChan 管道传递）
 		msg := item.Value.(*Message)
 		_, err := c.popDeferredMessage(msg.ID)
 		if err != nil {
 			goto exit
 		}
-		// 2.3 将消息添加到内存队列 memeoryMsgChan 或者后端持久化存储中 backend
+		// 2.3 将消息添加到内存队列 memoryMsgChan 或者后端持久化存储中 backend
 		c.put(msg)
 	}
 
@@ -629,7 +634,9 @@ func (c *Channel) processInFlightQueue(t int64) bool {
 
 	dirty := false
 	for {
-		// 3. 弹出 channel.inFlightPQ 队列首元素，并且若队首元素的 pri 大于当前的时间戳，则表明此消息还不能被投递，还没到投递 deadline。
+		// 3. 弹出 channel.inFlightPQ 队列首元素，并且若队首元素的 pri 大于当前的时间戳，
+		// 则表明此消息未过期，即仍在其处理的 deadline 期间，不用被移除，因此，返回队列是干净的。
+		// 即没有任何过时的消息
 		c.inFlightMutex.Lock()
 		msg, _ := c.inFlightPQ.PeekAndShift(t)
 		c.inFlightMutex.Unlock()
@@ -638,20 +645,24 @@ func (c *Channel) processInFlightQueue(t int64) bool {
 			goto exit
 		}
 		dirty = true
-		// 4. 否则，说明有需要处理的消息，则将消息从 channel 维护的消息字典 channel.inFlightMessages 中删除
+		// 4. 否则，说明有需要删除的消息，则将消息从 channel 维护的消息字典 channel.inFlightMessages 中删除
+		// 因为此消息的处理时间已经到了，换言之，此消息被客户端处理超时了
 		_, err := c.popInFlightMessage(msg.clientID, msg.ID)
 		if err != nil {
 			goto exit
 		}
-		// 5. 增加正在投递的消息的计数 timeoutCount
+		// 5. 增加处理超时的消息的计数 timeoutCount
 		atomic.AddUint64(&c.timeoutCount, 1)
 		c.RLock()
 		client, ok := c.clients[msg.clientID]
 		c.RUnlock()
 		if ok {
+			// 6. 修改对应处理超时的客户端的属性，如 减少 InFlightCount 数量
 			client.TimedOutMessage()
 		}
-		// 6. 将 message put 到内存队列或持久化存储
+		// 7. 然后重新将消息 put 到内存队列或持久化存储中，等待后续被重新投递
+		// 后面重新投递时，会更新此消息的属性，比如处理超时时间，
+		// 甚至会重新发送给订阅了此 channel 的另外一个客户端
 		c.put(msg)
 	}
 

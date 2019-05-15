@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="3d95cb88-b1ef-45e0-936e-04cfeb3cfff4" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="3d95cb88-b1ef-45e0-936e-04cfeb3cfff4" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -13,24 +11,13 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/nsqd/lookup.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-634">
-              <caret line="101" column="17" lean-forward="true" selection-start-line="101" selection-start-column="17" selection-end-line="101" selection-end-column="17" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/nsqd/protocol_v2.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="274">
-              <caret line="675" column="32" selection-start-line="675" selection-start-column="32" selection-end-line="675" selection-end-column="32" />
+            <state relative-caret-position="656">
+              <caret line="807" column="33" selection-start-line="807" selection-start-column="33" selection-end-line="807" selection-end-column="33" />
               <folding>
                 <element signature="e#261#357#0" />
                 <element signature="e#479#503#0" />
-                <element signature="n#!!block;n#IOLoop#0" />
-                <element signature="e#1382#3150#0" />
                 <element signature="e#1538#1615#0" />
                 <element signature="e#1621#1705#0" />
                 <element signature="e#1939#2063#0" />
@@ -45,14 +32,11 @@
                 <element signature="e#3069#3143#0" />
                 <element signature="e#3288#3333#0" />
                 <element signature="e#4209#4236#0" />
-                <element signature="n#!!block;n#Exec#0" />
                 <element signature="e#4440#4480#0" />
                 <element signature="e#4543#4565#0" />
-                <element signature="e#4567#5424#0" />
                 <element signature="e#4577#4651#0" />
                 <element signature="e#4653#4727#0" />
                 <element signature="e#4729#4803#0" />
-                <element signature="e#4805#4879#0" />
                 <element signature="e#4881#4957#0" />
                 <element signature="e#4959#5035#0" />
                 <element signature="e#5037#5111#0" />
@@ -60,8 +44,6 @@
                 <element signature="e#5193#5267#0" />
                 <element signature="e#5269#5343#0" />
                 <element signature="e#5345#5421#0" />
-                <element signature="e#7509#7529#0" />
-                <element signature="e#7568#8041#0" />
                 <element signature="e#8047#8423#0" />
                 <element signature="e#8438#8613#0" />
                 <element signature="e#8575#8595#0" />
@@ -69,7 +51,6 @@
                 <element signature="e#10039#10059#0" />
                 <element signature="e#11301#11320#0" />
                 <element signature="e#11734#11825#0" />
-                <element signature="n#!!block;n#IDENTIFY#0" />
                 <element signature="e#12041#12140#0" />
                 <element signature="e#12236#12337#0" />
                 <element signature="e#12393#12549#0" />
@@ -107,35 +88,20 @@
                 <element signature="e#19133#19289#0" />
                 <element signature="e#19306#19399#0" />
                 <element signature="e#19463#19556#0" />
+                <element signature="n#!!block;n#CheckAuth#0" />
                 <element signature="e#19856#20473#0" />
                 <element signature="e#19891#20003#0" />
                 <element signature="e#20077#20318#0" />
                 <element signature="e#20328#20470#0" />
-                <element signature="e#20947#21049#0" />
-                <element signature="n#!!block;n#RDY#0" />
-                <element signature="e#23305#23496#0" />
-                <element signature="e#23527#23621#0" />
-                <element signature="e#23662#23876#0" />
-                <element signature="e#23727#23852#0" />
-                <element signature="e#23936#24179#0" />
-                <element signature="n#!!block;n#FIN#0" />
                 <element signature="e#24511#24605#0" />
                 <element signature="e#24627#24727#0" />
                 <element signature="e#24795#24871#0" />
                 <element signature="e#25038#25153#0" />
-                <element signature="n#!!block;n#REQ#0" />
-                <element signature="e#25466#25560#0" />
                 <element signature="e#25582#25682#0" />
-                <element signature="e#25735#25811#0" />
-                <element signature="e#25942#26066#0" />
-                <element signature="e#26245#26270#0" />
                 <element signature="e#26311#26348#0" />
-                <element signature="e#26387#26583#0" />
-                <element signature="e#26866#26981#0" />
                 <element signature="n#!!block;n#CLS#0" />
                 <element signature="e#27192#27286#0" />
                 <element signature="n#!!block;n#NOP#0" />
-                <element signature="n#!!block;n#PUB#0" />
                 <element signature="e#27582#27686#0" />
                 <element signature="e#27780#27906#0" />
                 <element signature="e#28012#28119#0" />
@@ -144,7 +110,6 @@
                 <element signature="e#28615#28717#0" />
                 <element signature="e#28818#28840#0" />
                 <element signature="e#29047#29140#0" />
-                <element signature="n#!!block;n#MPUB#0" />
                 <element signature="e#29443#29548#0" />
                 <element signature="e#29624#29763#0" />
                 <element signature="e#29831#29853#0" />
@@ -153,7 +118,6 @@
                 <element signature="e#30259#30411#0" />
                 <element signature="e#30563#30585#0" />
                 <element signature="e#30827#30922#0" />
-                <element signature="n#!!block;n#DPUB#0" />
                 <element signature="e#31123#31228#0" />
                 <element signature="e#31304#31431#0" />
                 <element signature="e#31500#31625#0" />
@@ -190,8 +154,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/nsqd/http.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="95">
-              <caret line="403" column="36" selection-start-line="403" selection-start-column="21" selection-end-line="403" selection-end-column="36" />
+            <state relative-caret-position="342">
+              <caret line="214" column="41" lean-forward="true" selection-start-line="214" selection-start-column="41" selection-end-line="214" selection-end-column="41" />
               <folding>
                 <element signature="n#!!block;n#printStats#0" />
               </folding>
@@ -202,8 +166,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/nsqd/nsqd.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="358">
-              <caret line="504" column="40" selection-start-line="504" selection-start-column="40" selection-end-line="504" selection-end-column="40" />
+            <state relative-caret-position="301">
+              <caret line="765" column="44" selection-start-line="765" selection-start-column="41" selection-end-line="765" selection-end-column="44" />
               <folding>
                 <element signature="e#659#1845#0" />
                 <element signature="e#1886#4752#0" />
@@ -216,29 +180,30 @@
                 <element signature="e#5560#5655#0" />
                 <element signature="e#5778#5855#0" />
                 <element signature="e#5901#6053#0" />
-                <element signature="e#6100#7410#0" />
                 <element signature="e#7450#7672#0" />
                 <element signature="e#7811#7992#0" />
                 <element signature="e#8043#8233#0" />
+                <element signature="e#8286#9472#0" />
                 <element signature="e#9748#11052#0" />
                 <element signature="e#11087#11779#0" />
+                <element signature="e#12010#14698#0" />
+                <element signature="e#15742#16387#0" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/nsqd/topic.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="554">
-              <caret line="149" column="21" lean-forward="true" selection-start-line="149" selection-start-column="21" selection-end-line="149" selection-end-column="21" />
+            <state relative-caret-position="563">
+              <caret line="373" column="35" lean-forward="true" selection-start-line="373" selection-start-column="35" selection-end-line="373" selection-end-column="35" />
               <folding>
                 <element signature="e#1567#3195#0" />
+                <element signature="e#3680#3973#0" />
+                <element signature="e#4152#4545#0" />
+                <element signature="e#4620#4780#0" />
                 <element signature="e#4951#5846#0" />
-                <element signature="e#6005#6382#0" />
-                <element signature="e#6510#7003#0" />
-                <element signature="e#7242#7648#0" />
-                <element signature="e#7987#11000#0" />
                 <element signature="e#11503#12933#0" />
                 <element signature="e#12991#13106#0" />
                 <element signature="e#13186#13644#0" />
@@ -248,38 +213,14 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/nsqd/channel.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="498">
-              <caret line="70" column="39" selection-start-line="70" selection-start-column="39" selection-end-line="70" selection-end-column="39" />
+            <state relative-caret-position="387">
+              <caret line="408" column="21" lean-forward="true" selection-start-line="408" selection-start-column="21" selection-end-line="408" selection-end-column="21" />
               <folding>
-                <element signature="e#2529#4035#0" />
-                <element signature="e#4104#4495#0" />
-                <element signature="e#4604#4650#0" />
-                <element signature="e#4893#5635#0" />
-                <element signature="e#5687#6088#0" />
-                <element signature="e#6275#7393#0" />
-                <element signature="e#7657#7895#0" />
-                <element signature="e#8270#8455#0" />
-                <element signature="e#8584#8907#0" />
-                <element signature="e#9017#9096#0" />
-                <element signature="e#9354#9848#0" />
-                <element signature="e#10077#10319#0" />
-                <element signature="e#10757#11362#0" />
-                <element signature="e#11558#11907#0" />
-                <element signature="e#12138#12354#0" />
-                <element signature="e#12541#12895#0" />
-                <element signature="e#13036#13352#0" />
-                <element signature="e#13538#13757#0" />
-                <element signature="e#13992#14331#0" />
-                <element signature="e#14381#14458#0" />
-                <element signature="e#14513#14713#0" />
-                <element signature="e#14820#15102#0" />
-                <element signature="e#15220#15482#0" />
-                <element signature="e#15537#15622#0" />
-                <element signature="e#15716#16444#0" />
-                <element signature="e#16540#17400#0" />
+                <element signature="e#9660#10154#0" />
+                <element signature="e#10383#10625#0" />
               </folding>
             </state>
           </provider>
@@ -288,8 +229,17 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/nsqd/in_flight_pqueue.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1049">
-              <caret line="2" column="5" selection-start-line="2" selection-start-column="5" selection-end-line="2" selection-end-column="5" />
+            <state relative-caret-position="119">
+              <caret line="16" column="29" lean-forward="true" selection-start-line="16" selection-start-column="29" selection-end-line="16" selection-end-column="29" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/nsqd/client_v2.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="293">
+              <caret line="343" column="19" selection-start-line="343" selection-start-column="19" selection-end-line="343" selection-end-column="19" />
             </state>
           </provider>
         </entry>
@@ -297,7 +247,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/nsqd/message.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="692">
+            <state relative-caret-position="668">
               <caret line="93" column="5" selection-start-line="93" selection-start-column="5" selection-end-line="93" selection-end-column="5" />
             </state>
           </provider>
@@ -306,22 +256,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/internal/pqueue/pqueue.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="345">
-              <caret line="50" column="44" lean-forward="true" selection-start-line="50" selection-start-column="44" selection-end-line="50" selection-end-column="44" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/nsqd/channel_test.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="603">
-              <caret line="223" column="1" lean-forward="true" selection-start-line="223" selection-start-column="1" selection-end-line="223" selection-end-column="1" />
-              <folding>
-                <element signature="n#!!block;n#TestInFlightWorker#0" />
-                <element signature="n#!!block;n#TestChannelEmpty#0" />
-                <element signature="n#!!block;n#TestChannelEmptyConsumer#0" />
-              </folding>
+            <state relative-caret-position="187">
+              <caret line="13" column="44" lean-forward="true" selection-start-line="13" selection-start-column="44" selection-end-line="13" selection-end-column="44" />
             </state>
           </provider>
         </entry>
@@ -330,16 +266,10 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>Delete</find>
-      <find>connectCallback</find>
-      <find>NSQLookupdTCPAddresses</find>
-      <find>n.isLoading</find>
-      <find>LoadMetadata</find>
       <find>heart</find>
       <find>heartbeatBytes</find>
       <find>IsPaused</find>
       <find>paused</find>
-      <find>startChan</find>
       <find>subEventChan</find>
       <find>identifyEventChan</find>
       <find>ReadyCount</find>
@@ -347,7 +277,6 @@
       <find>tryUpdateReadyState</find>
       <find>outputBufferTicker</find>
       <find>backend</find>
-      <find>memoryMsgChan</find>
       <find>ReadChan</find>
       <find>d.readChan</find>
       <find>readChan</find>
@@ -360,6 +289,13 @@
       <find>Channel</find>
       <find>clientID</find>
       <find>channelUpdateChan</find>
+      <find>workCh</find>
+      <find>memoryMsgChan</find>
+      <find>startChan</find>
+      <find>exitChan</find>
+      <find>queueScanLoop</find>
+      <find>TimedOutMessage</find>
+      <find>SubEventChan</find>
     </findStrings>
   </component>
   <component name="GOROOT" path="/usr/local/go" />
@@ -395,7 +331,6 @@
         <option value="$PROJECT_DIR$/nsqd/options.go" />
         <option value="$PROJECT_DIR$/nsqd/buffer_pool.go" />
         <option value="$PROJECT_DIR$/nsqd/nsqd_test.go" />
-        <option value="$PROJECT_DIR$/nsqd/client_v2.go" />
         <option value="$PROJECT_DIR$/internal/pqueue/pqueue.go" />
         <option value="$PROJECT_DIR$/nsqd/http.go" />
         <option value="$PROJECT_DIR$/internal/clusterinfo/data.go" />
@@ -413,14 +348,15 @@
         <option value="$PROJECT_DIR$/apps/nsqd/main.go" />
         <option value="$PROJECT_DIR$/nsqd/lookup.go" />
         <option value="$PROJECT_DIR$/nsqd/lookup_peer.go" />
-        <option value="$PROJECT_DIR$/nsqd/protocol_v2.go" />
         <option value="$PROJECT_DIR$/../go-diskqueue/diskqueue.go" />
-        <option value="$PROJECT_DIR$/nsqd/topic.go" />
-        <option value="$PROJECT_DIR$/nsqd/nsqd.go" />
         <option value="$PROJECT_DIR$/nsqd/channel_test.go" />
         <option value="$PROJECT_DIR$/nsqd/message.go" />
-        <option value="$PROJECT_DIR$/nsqd/in_flight_pqueue.go" />
         <option value="$PROJECT_DIR$/nsqd/channel.go" />
+        <option value="$PROJECT_DIR$/nsqd/topic.go" />
+        <option value="$PROJECT_DIR$/nsqd/in_flight_pqueue.go" />
+        <option value="$PROJECT_DIR$/nsqd/nsqd.go" />
+        <option value="$PROJECT_DIR$/nsqd/client_v2.go" />
+        <option value="$PROJECT_DIR$/nsqd/protocol_v2.go" />
       </list>
     </option>
   </component>
@@ -686,8 +622,8 @@
     <frame x="64" y="-11" width="1857" height="1092" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.28258604" visible="true" weight="0.19823302" />
-      <window_info id="Structure" order="1" sideWeight="0.71741396" side_tool="true" weight="0.19823302" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.28154328" visible="true" weight="0.20044175" />
+      <window_info active="true" id="Structure" order="1" sideWeight="0.71845675" side_tool="true" visible="true" weight="0.20044175" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.40563086" />
@@ -756,14 +692,12 @@
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/nsqd/protocol_v2.go</url>
           <line>377</line>
-          <properties />
           <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/../../src/github.com/nsqio/go-diskqueue/diskqueue.go" />
     <entry file="file://$PROJECT_DIR$/../../src/github.com/nsqio/go-diskqueue/diskqueue_test.go" />
     <entry file="file:///usr/local/go/src/encoding/binary/binary.go">
       <provider selected="true" editor-type-id="text-editor">
@@ -1045,13 +979,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/nsqd/client_v2.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="293">
-          <caret line="86" column="11" selection-start-line="86" selection-start-column="4" selection-end-line="86" selection-end-column="11" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../go-diskqueue/diskqueue.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="337">
@@ -1062,7 +989,7 @@
     <entry file="file://$PROJECT_DIR$/nsqd/channel_test.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="603">
-          <caret line="223" column="1" lean-forward="true" selection-start-line="223" selection-start-column="1" selection-end-line="223" selection-end-column="1" />
+          <caret line="223" column="1" selection-start-line="223" selection-start-column="1" selection-end-line="223" selection-end-column="1" />
           <folding>
             <element signature="n#!!block;n#TestInFlightWorker#0" />
             <element signature="n#!!block;n#TestChannelEmpty#0" />
@@ -1071,36 +998,93 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/internal/util/rand.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="68">
+          <caret line="6" column="5" selection-start-line="6" selection-start-column="5" selection-end-line="6" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/internal/pqueue/pqueue.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="345">
-          <caret line="50" column="44" lean-forward="true" selection-start-line="50" selection-start-column="44" selection-end-line="50" selection-end-column="44" />
+        <state relative-caret-position="187">
+          <caret line="13" column="44" lean-forward="true" selection-start-line="13" selection-start-column="44" selection-end-line="13" selection-end-column="44" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/nsqd/in_flight_pqueue.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1049">
-          <caret line="2" column="5" selection-start-line="2" selection-start-column="5" selection-end-line="2" selection-end-column="5" />
+        <state relative-caret-position="119">
+          <caret line="16" column="29" lean-forward="true" selection-start-line="16" selection-start-column="29" selection-end-line="16" selection-end-column="29" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/nsqd/message.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="692">
+        <state relative-caret-position="668">
           <caret line="93" column="5" selection-start-line="93" selection-start-column="5" selection-end-line="93" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/nsqd/nsqd.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="301">
+          <caret line="765" column="44" selection-start-line="765" selection-start-column="41" selection-end-line="765" selection-end-column="44" />
+          <folding>
+            <element signature="e#659#1845#0" />
+            <element signature="e#1886#4752#0" />
+            <element signature="e#5045#5092#0" />
+            <element signature="e#5137#5185#0" />
+            <element signature="e#5231#5280#0" />
+            <element signature="e#5318#5359#0" />
+            <element signature="e#5393#5424#0" />
+            <element signature="e#5458#5524#0" />
+            <element signature="e#5560#5655#0" />
+            <element signature="e#5778#5855#0" />
+            <element signature="e#5901#6053#0" />
+            <element signature="e#7450#7672#0" />
+            <element signature="e#7811#7992#0" />
+            <element signature="e#8043#8233#0" />
+            <element signature="e#8286#9472#0" />
+            <element signature="e#9748#11052#0" />
+            <element signature="e#11087#11779#0" />
+            <element signature="e#12010#14698#0" />
+            <element signature="e#15742#16387#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/nsqd/lookup.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="102">
+          <caret line="82" column="29" lean-forward="true" selection-start-line="82" selection-start-column="29" selection-end-line="82" selection-end-column="29" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/nsqd/http.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="342">
+          <caret line="214" column="41" lean-forward="true" selection-start-line="214" selection-start-column="41" selection-end-line="214" selection-end-column="41" />
+          <folding>
+            <element signature="n#!!block;n#printStats#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/nsqd/client_v2.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="293">
+          <caret line="343" column="19" selection-start-line="343" selection-start-column="19" selection-end-line="343" selection-end-column="19" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/nsqd/protocol_v2.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="274">
-          <caret line="675" column="32" selection-start-line="675" selection-start-column="32" selection-end-line="675" selection-end-column="32" />
+        <state relative-caret-position="656">
+          <caret line="807" column="33" selection-start-line="807" selection-start-column="33" selection-end-line="807" selection-end-column="33" />
           <folding>
             <element signature="e#261#357#0" />
             <element signature="e#479#503#0" />
-            <element signature="n#!!block;n#IOLoop#0" />
-            <element signature="e#1382#3150#0" />
             <element signature="e#1538#1615#0" />
             <element signature="e#1621#1705#0" />
             <element signature="e#1939#2063#0" />
@@ -1115,14 +1099,11 @@
             <element signature="e#3069#3143#0" />
             <element signature="e#3288#3333#0" />
             <element signature="e#4209#4236#0" />
-            <element signature="n#!!block;n#Exec#0" />
             <element signature="e#4440#4480#0" />
             <element signature="e#4543#4565#0" />
-            <element signature="e#4567#5424#0" />
             <element signature="e#4577#4651#0" />
             <element signature="e#4653#4727#0" />
             <element signature="e#4729#4803#0" />
-            <element signature="e#4805#4879#0" />
             <element signature="e#4881#4957#0" />
             <element signature="e#4959#5035#0" />
             <element signature="e#5037#5111#0" />
@@ -1130,8 +1111,6 @@
             <element signature="e#5193#5267#0" />
             <element signature="e#5269#5343#0" />
             <element signature="e#5345#5421#0" />
-            <element signature="e#7509#7529#0" />
-            <element signature="e#7568#8041#0" />
             <element signature="e#8047#8423#0" />
             <element signature="e#8438#8613#0" />
             <element signature="e#8575#8595#0" />
@@ -1139,7 +1118,6 @@
             <element signature="e#10039#10059#0" />
             <element signature="e#11301#11320#0" />
             <element signature="e#11734#11825#0" />
-            <element signature="n#!!block;n#IDENTIFY#0" />
             <element signature="e#12041#12140#0" />
             <element signature="e#12236#12337#0" />
             <element signature="e#12393#12549#0" />
@@ -1177,35 +1155,20 @@
             <element signature="e#19133#19289#0" />
             <element signature="e#19306#19399#0" />
             <element signature="e#19463#19556#0" />
+            <element signature="n#!!block;n#CheckAuth#0" />
             <element signature="e#19856#20473#0" />
             <element signature="e#19891#20003#0" />
             <element signature="e#20077#20318#0" />
             <element signature="e#20328#20470#0" />
-            <element signature="e#20947#21049#0" />
-            <element signature="n#!!block;n#RDY#0" />
-            <element signature="e#23305#23496#0" />
-            <element signature="e#23527#23621#0" />
-            <element signature="e#23662#23876#0" />
-            <element signature="e#23727#23852#0" />
-            <element signature="e#23936#24179#0" />
-            <element signature="n#!!block;n#FIN#0" />
             <element signature="e#24511#24605#0" />
             <element signature="e#24627#24727#0" />
             <element signature="e#24795#24871#0" />
             <element signature="e#25038#25153#0" />
-            <element signature="n#!!block;n#REQ#0" />
-            <element signature="e#25466#25560#0" />
             <element signature="e#25582#25682#0" />
-            <element signature="e#25735#25811#0" />
-            <element signature="e#25942#26066#0" />
-            <element signature="e#26245#26270#0" />
             <element signature="e#26311#26348#0" />
-            <element signature="e#26387#26583#0" />
-            <element signature="e#26866#26981#0" />
             <element signature="n#!!block;n#CLS#0" />
             <element signature="e#27192#27286#0" />
             <element signature="n#!!block;n#NOP#0" />
-            <element signature="n#!!block;n#PUB#0" />
             <element signature="e#27582#27686#0" />
             <element signature="e#27780#27906#0" />
             <element signature="e#28012#28119#0" />
@@ -1214,7 +1177,6 @@
             <element signature="e#28615#28717#0" />
             <element signature="e#28818#28840#0" />
             <element signature="e#29047#29140#0" />
-            <element signature="n#!!block;n#MPUB#0" />
             <element signature="e#29443#29548#0" />
             <element signature="e#29624#29763#0" />
             <element signature="e#29831#29853#0" />
@@ -1223,7 +1185,6 @@
             <element signature="e#30259#30411#0" />
             <element signature="e#30563#30585#0" />
             <element signature="e#30827#30922#0" />
-            <element signature="n#!!block;n#DPUB#0" />
             <element signature="e#31123#31228#0" />
             <element signature="e#31304#31431#0" />
             <element signature="e#31500#31625#0" />
@@ -1256,99 +1217,31 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/nsqd/lookup.go">
+    <entry file="file://$PROJECT_DIR$/nsqd/channel.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-634">
-          <caret line="101" column="17" lean-forward="true" selection-start-line="101" selection-start-column="17" selection-end-line="101" selection-end-column="17" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/nsqd/http.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="95">
-          <caret line="403" column="36" selection-start-line="403" selection-start-column="21" selection-end-line="403" selection-end-column="36" />
+        <state relative-caret-position="387">
+          <caret line="408" column="21" lean-forward="true" selection-start-line="408" selection-start-column="21" selection-end-line="408" selection-end-column="21" />
           <folding>
-            <element signature="n#!!block;n#printStats#0" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/nsqd/nsqd.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="358">
-          <caret line="504" column="40" selection-start-line="504" selection-start-column="40" selection-end-line="504" selection-end-column="40" />
-          <folding>
-            <element signature="e#659#1845#0" />
-            <element signature="e#1886#4752#0" />
-            <element signature="e#5045#5092#0" />
-            <element signature="e#5137#5185#0" />
-            <element signature="e#5231#5280#0" />
-            <element signature="e#5318#5359#0" />
-            <element signature="e#5393#5424#0" />
-            <element signature="e#5458#5524#0" />
-            <element signature="e#5560#5655#0" />
-            <element signature="e#5778#5855#0" />
-            <element signature="e#5901#6053#0" />
-            <element signature="e#6100#7410#0" />
-            <element signature="e#7450#7672#0" />
-            <element signature="e#7811#7992#0" />
-            <element signature="e#8043#8233#0" />
-            <element signature="e#9748#11052#0" />
-            <element signature="e#11087#11779#0" />
+            <element signature="e#9660#10154#0" />
+            <element signature="e#10383#10625#0" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/nsqd/topic.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="554">
-          <caret line="149" column="21" lean-forward="true" selection-start-line="149" selection-start-column="21" selection-end-line="149" selection-end-column="21" />
+        <state relative-caret-position="563">
+          <caret line="373" column="35" lean-forward="true" selection-start-line="373" selection-start-column="35" selection-end-line="373" selection-end-column="35" />
           <folding>
             <element signature="e#1567#3195#0" />
+            <element signature="e#3680#3973#0" />
+            <element signature="e#4152#4545#0" />
+            <element signature="e#4620#4780#0" />
             <element signature="e#4951#5846#0" />
-            <element signature="e#6005#6382#0" />
-            <element signature="e#6510#7003#0" />
-            <element signature="e#7242#7648#0" />
-            <element signature="e#7987#11000#0" />
             <element signature="e#11503#12933#0" />
             <element signature="e#12991#13106#0" />
             <element signature="e#13186#13644#0" />
             <element signature="e#13720#14269#0" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/nsqd/channel.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="498">
-          <caret line="70" column="39" selection-start-line="70" selection-start-column="39" selection-end-line="70" selection-end-column="39" />
-          <folding>
-            <element signature="e#2529#4035#0" />
-            <element signature="e#4104#4495#0" />
-            <element signature="e#4604#4650#0" />
-            <element signature="e#4893#5635#0" />
-            <element signature="e#5687#6088#0" />
-            <element signature="e#6275#7393#0" />
-            <element signature="e#7657#7895#0" />
-            <element signature="e#8270#8455#0" />
-            <element signature="e#8584#8907#0" />
-            <element signature="e#9017#9096#0" />
-            <element signature="e#9354#9848#0" />
-            <element signature="e#10077#10319#0" />
-            <element signature="e#10757#11362#0" />
-            <element signature="e#11558#11907#0" />
-            <element signature="e#12138#12354#0" />
-            <element signature="e#12541#12895#0" />
-            <element signature="e#13036#13352#0" />
-            <element signature="e#13538#13757#0" />
-            <element signature="e#13992#14331#0" />
-            <element signature="e#14381#14458#0" />
-            <element signature="e#14513#14713#0" />
-            <element signature="e#14820#15102#0" />
-            <element signature="e#15220#15482#0" />
-            <element signature="e#15537#15622#0" />
-            <element signature="e#15716#16444#0" />
-            <element signature="e#16540#17400#0" />
           </folding>
         </state>
       </provider>

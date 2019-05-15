@@ -765,7 +765,7 @@ func (p *protocolV2) FIN(client *clientV2, params [][]byte) ([]byte, error) {
 	return nil, nil
 }
 
-// nsqd 为此 client 将 message 重新入队
+// nsqd 为此 client 将 message 重新入队，并指定是否需要延时发送
 func (p *protocolV2) REQ(client *clientV2, params [][]byte) ([]byte, error) {
 	// 1. 先检验 client 的状态以及参数信息
 	state := atomic.LoadInt32(&client.State)
