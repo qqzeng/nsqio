@@ -84,7 +84,8 @@ type diskQueue struct {
 
 	// keeps track of the position where we have read
 	// (but not yet sent over readChan)
-	// 之所以存在 nextReadPos 及 nextReadFileNum, 是因为虽然消费者已经发起了数据读取请求，但 diskQueue 还未将此消息发送给消费者，
+	// 之所以存在 nextReadPos & nextReadFileNum 和 readPos & readFileNum,
+	// 是因为虽然消费者已经发起了数据读取请求，但 diskQueue 还未将此消息发送给消费者，
 	// 当发送完成后，会将 readPos 更新到 nextReadPos，readFileNum 也类似
 	nextReadPos     int64				// 下一个应该被读取的索引位置
 	nextReadFileNum int64				// 下一个应该被读取的文件号
@@ -95,8 +96,10 @@ type diskQueue struct {
 	writeBuf  bytes.Buffer				// 当前文件写入流
 
 	// exposed via ReadChan()
-	readChan chan []byte				// 应用程序可通过此通道从 diskQueue 中读取消息，因为 readChan 是 unbuffered的，所以，读取操作是同步的
-										// 另外当一个文件中的数据被读取完时，文件会被删除，同时切换到下一个被读取的文件
+	// 应用程序可通过此通道从 diskQueue 中读取消息，因为 readChan 是 unbuffered的，所以，读取操作是同步的
+	// 另外当一个文件中的数据被读取完时，文件会被删除，同时切换到下一个被读取的文件
+	readChan chan []byte
+
 
 	// internal channels
 	writeChan         chan []byte		// 应用程序可通过此通道往 diskQueue 中压入消息，写入操作也是同步的
@@ -159,7 +162,7 @@ func (d *diskQueue) ReadChan() chan []byte {
 
 // Put writes a []byte to the queue
 // 往 diskQueue 压入数据，将数据压入 writeChan，同时将执行结果通过 writeResponseChan 返回
-// 因此为同步操作
+// 因此压入消息的操作为同步操作
 func (d *diskQueue) Put(data []byte) error {
 	d.RLock()
 	defer d.RUnlock()
@@ -250,7 +253,7 @@ func (d *diskQueue) deleteAllFiles() error {
 // 将 readFileNum 到 writeFileNum 之间的文件全部删除
 // 将 readFileNum 设置为 writeFileNum
 // 即将前面不正确的文件全部删除掉，重新开始读取
-// 其也可用作清空 diskQueue 当前未读取的所有文件的操作，重置 depth
+// 另外，其也可用作清空 diskQueue 当前未读取的所有文件的操作，重置 depth
 func (d *diskQueue) skipToNextRWFile() error {
 	var err error
 
@@ -314,7 +317,7 @@ func (d *diskQueue) readOne() ([]byte, error) {
 		// 1.3. 构建输入流读取器
 		d.reader = bufio.NewReader(d.readFile)
 	}
-	// 2. 读取内容，并读取内容的长度是否合法
+	// 2. 读取内容，并校验读取内容的长度是否合法
 	err = binary.Read(d.reader, binary.BigEndian, &msgSize)
 	if err != nil {
 		d.readFile.Close()
@@ -370,7 +373,7 @@ func (d *diskQueue) readOne() ([]byte, error) {
 func (d *diskQueue) writeOne(data []byte) error {
 	var err error
 
-	// 若当前写入文件句柄为空，则需要先实例化
+	// 1. 若当前写入文件句柄为空，则需要先实例化
 	if d.writeFile == nil {
 		curFileName := d.fileName(d.writeFileNum)
 		d.writeFile, err = os.OpenFile(curFileName, os.O_RDWR|os.O_CREATE, 0600)
@@ -379,7 +382,7 @@ func (d *diskQueue) writeOne(data []byte) error {
 		}
 
 		d.logf(INFO, "DISKQUEUE(%s): writeOne() opened %s", d.name, curFileName)
-		// 同时，若当前的写入索引大于0,则重新定位写入索引
+		// 2. 同时，若当前的写入索引大于0,则重新定位写入索引
 		if d.writePos > 0 {
 			_, err = d.writeFile.Seek(d.writePos, 0)
 			if err != nil {
@@ -389,7 +392,7 @@ func (d *diskQueue) writeOne(data []byte) error {
 			}
 		}
 	}
-	// 获取写入数据长度，并检查长度合法性。然后将写入到写入缓冲，最后将写入缓冲的数据一次性写入到文件
+	// 3. 获取写入数据长度，并检查长度合法性。然后将数据写入到写入缓冲，最后将写入缓冲的数据一次性刷新到文件
 	dataLen := int32(len(data))
 
 	if dataLen < d.minMsgSize || dataLen > d.maxMsgSize {
@@ -414,9 +417,9 @@ func (d *diskQueue) writeOne(data []byte) error {
 		d.writeFile = nil
 		return err
 	}
-	// 更新写入索引 writePos 及 depth，且若 writePos 大于 maxBytesPerFile，则说明已经当前写入文件的末尾
-	// 则更新 writeFileNum，重置 writePos，即更换到一个新的文件执行写入操作
-	// 且每一次更换到下一个文件，则需要将写入文件同步到磁盘
+	// 更新写入索引 writePos 及 depth，且若 writePos 大于 maxBytesPerFile，则说明当前已经写入到文件的末尾。
+	// 因此需要更新 writeFileNum，重置 writePos，即更换到一个新的文件执行写入操作（为了避免一直写入单个文件）
+	// 且每一次更换到下一个文件，都需要将写入文件同步到磁盘
 	totalBytes := int64(4 + dataLen)
 	d.writePos += totalBytes
 	atomic.AddInt64(&d.depth, 1)
@@ -456,7 +459,7 @@ func (d *diskQueue) sync() error {
 	if err != nil {
 		return err
 	}
-
+	// 重置了刷新开关
 	d.needSync = false
 	return nil
 }
@@ -493,6 +496,7 @@ func (d *diskQueue) retrieveMetaData() error {
 // persistMetaData atomically writes state to the filesystem
 // 持久化元数据信息到磁盘
 // 同样是先写入到临时文件，然后同步刷新磁盘缓冲，最后才原子重命名临时文件
+// 元数据的内容包括：depth、readFileNum、readPos、writeFileNum 和 writePos
 func (d *diskQueue) persistMetaData() error {
 	var f *os.File
 	var err error
@@ -529,6 +533,7 @@ func (d *diskQueue) fileName(fileNum int64) string {
 	return fmt.Sprintf(path.Join(d.dataPath, "%s.diskqueue.%06d.dat"), d.name, fileNum)
 }
 
+// 检测文件末尾是否已经损坏
 func (d *diskQueue) checkTailCorruption(depth int64) {
 	// 若当前还有消息可供读取，则说明未读取到文件末尾，暂时不用检查
 	if d.readFileNum < d.writeFileNum || d.readPos < d.writePos {
@@ -540,8 +545,10 @@ func (d *diskQueue) checkTailCorruption(depth int64) {
 	// 若代码能够执行，则正常情况下，说明已经读取到 diskQueue 的尾部，
 	// 即读取到了最后一个文件的尾部了，因此，此时的 depth(累积等待读取或消费的消息数量)
 	// 应该为0,因此若其不为0,则表明文件尾部已经损坏，报错。
-	// 且若其小于 0,则表明在初始化加载的元数据已经损坏
+	// 一方面，若其小于 0,则表明初始化加载的元数据已经损坏（depth从元数据文件中读取而来）
+	// 原因是：实际上文件还有可供读取的消息，但depth指示没有了，因此 depth 计数错误。
 	// 否则，说明是消息实体数据存在丢失的情况
+	// 原因是：实际上还有消息可供读取 depth > 0,但是文件中已经没有消息了，因此文件被损坏。
 	// 同时，强制重置 depth，并且设置 needSync
 	if depth != 0 {
 		if depth < 0 {
@@ -559,7 +566,7 @@ func (d *diskQueue) checkTailCorruption(depth int64) {
 	}
 	// 另外，若 depth == 0。
 	// 但文件读取记录信息不合法 d.readFileNum != d.writeFileNum || d.readPos != d.writePos
-	// 则跳过下一个需要被读或写的文件
+	// 则跳过接下来需要被读或写的所有文件，类似于重置持久化存储的状态，格式化操作
 	// 同时设置 needSync
 	if d.readFileNum != d.writeFileNum || d.readPos != d.writePos {
 		if d.readFileNum > d.writeFileNum {
@@ -580,8 +587,9 @@ func (d *diskQueue) checkTailCorruption(depth int64) {
 }
 
 // sets needSync flag if a file is removed
-// 检查当前读取的文件和上一次读取的文件是否为同一个，即读取是否涉及到文件的更换
-// 若是，则说明可以将磁盘中上一个文件删除掉，同时需要设置 needSync
+// 检查当前读取的文件和上一次读取的文件是否为同一个，即读取是否涉及到文件的更换，
+// 若是，则说明可以将磁盘中上一个文件删除掉，因为上一个文件包含的消息已经读取完毕，
+// 同时需要设置 needSync
 func (d *diskQueue) moveForward() {
 	oldReadFileNum := d.readFileNum
 	d.readFileNum = d.nextReadFileNum
@@ -591,15 +599,16 @@ func (d *diskQueue) moveForward() {
 	// see if we need to clean up the old file
 	if oldReadFileNum != d.nextReadFileNum {
 		// sync every time we start reading from a new file
+		// 每当准备读取一个新的文件时，需要设置 needSync
 		d.needSync = true
 
 		fn := d.fileName(oldReadFileNum)
-		err := os.Remove(fn)
+		err := os.Remove(fn) // 将老的文件删除
 		if err != nil {
 			d.logf(ERROR, "DISKQUEUE(%s) failed to Remove(%s) - %s", d.name, fn, err)
 		}
 	}
-
+	// 检测文件末尾是否已经损坏
 	d.checkTailCorruption(depth)
 }
 
@@ -648,7 +657,7 @@ func (d *diskQueue) handleReadError() {
 //
 // conveniently this also means that we're asynchronously reading from the filesystem
 
-// ioLoop 通过 ReadChan 方法来提供后端持久化的有，并可以同时给并发的消费者消费
+// ioLoop 通过 ReadChan 方法来提供后端持久化的消息，并可供并发的消费者消费
 // 通过特定的 channels 来执行读写操作
 // 应用程序可以异步地从持久化存储中读取消息
 func (d *diskQueue) ioLoop() {
@@ -661,7 +670,7 @@ func (d *diskQueue) ioLoop() {
 
 	for {
 		// dont sync all the time :)
-		// 1. 指定间隔时间才执行同步刷新到磁盘的操作
+		// 1. 只有写入缓冲中的消息达到一定数量，才执行同步刷新到磁盘的操作
 		if count == d.syncEvery {
 			d.needSync = true
 		}
@@ -671,14 +680,14 @@ func (d *diskQueue) ioLoop() {
 			if err != nil {
 				d.logf(ERROR, "DISKQUEUE(%s) failed to sync - %s", d.name, err)
 			}
-			count = 0
+			count = 0 // 重置当前等待刷盘的消息数量
 		}
 		// 3. 若当前还有数据（消息）可供消费（即当前读取的文件编号 readFileNum < 目前已经写入的文件编号 writeFileNum
-		// 或者 当前的读取索引 readPos < 当前的写的索引）
+		// 或者 当前的读取索引 readPos < 当前的写的索引 writePos）
 		// 因为初始化读每一个文件时都需要重置 readPos = 0
 		if (d.readFileNum < d.writeFileNum) || (d.readPos < d.writePos) {
 			// 保证当前处于可读取的状态，即 readPos + totalByte == nextReadPos，
-			// 若二者相等，同需要通过 d.readOne 方法先更新 nextReadPos
+			// 若二者相等，则需要通过 d.readOne 方法先更新 nextReadPos
 			if d.nextReadPos == d.readPos {
 				dataRead, err = d.readOne()
 				if err != nil {
@@ -691,7 +700,7 @@ func (d *diskQueue) ioLoop() {
 			// 取出读取通道 readChan
 			r = d.readChan
 		} else {
-			r = nil // 当 r == nil时，使用 select 不能将数压入其中
+			r = nil // 当 r == nil时，代表此时消息已经全部读取完毕，因此使用 select 不能将数据（消息）压入其中
 		}
 
 		select {
@@ -699,22 +708,22 @@ func (d *diskQueue) ioLoop() {
 		// in a select are skipped, we set r to d.readChan only when there is data to read
 		// 4. 当读取到数据时，将它压入到 r/readChan 通道，同时判断是否需要更新到下一个文件读取，同时设置 needSync
 		case r <- dataRead:
-			count++ // 更新当前等待刷盘的消息数量
-			// 判断是否可以将磁盘中上一个文件删除掉（已经读取完毕），同时需要设置 needSync
+			count++ // TODO 更新当前等待刷盘的消息数量
+			// 判断是否可以将磁盘中读取的上一个文件删除掉（已经读取完毕），同时需要设置 needSync
 			// 值得注意的是，moveForward 方法中将 readPos 更新为了 nextReadPos，且 readFileNum 也被更新为 nextReadFileNum
-			// 因为此时消息已经发送给了消费者
+			// 因为此时消息已经发送给了消费者了。
 			d.moveForward()
 		// 5. 收到清空持久化存储 disQueue 的消息
-		case <-d.emptyChan:
+		case <-d.emptyChan: // (当应用程序调用 diskQueue.Empty 方法时触发)
 			// 删除目前还未读取的文件，同时删除元数据文件
 			d.emptyResponseChan <- d.deleteAllFiles()
 			count = 0 // 重置当前等待刷盘的消息数量
-		// 6. 收到写入消息磁盘的消息(当应用程序调用 diskQueue.put 方法时触发)
+		// 6. 收到写入消息到磁盘的消息 (当应用程序调用 diskQueue.Put 方法时触发)
 		case dataWrite := <-d.writeChan:
 			count++ // 更新当前等待刷盘的消息数量
 			// 将字节数组内容写入到持久化存储，同时更新读写位置信息，以及判断是否需要滚动文件
 			d.writeResponseChan <- d.writeOne(dataWrite)
-		// 7. 定时执行刷盘操作，在数据等待时，才需要
+		// 7. 定时执行刷盘操作，在存在数据等待刷盘时，才需要执行刷盘动作
 		case <-syncTicker.C:
 			if count == 0 {
 				// avoid sync when there's no activity
