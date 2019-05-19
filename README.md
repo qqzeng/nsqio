@@ -8,3 +8,4 @@ Related blogs :
   4. [nsq topic 源码简析](https://qqzeng.top/2019/05/14/nsq-topic-%E6%BA%90%E7%A0%81%E7%AE%80%E6%9E%90/)
   5. [nsq channel 源码简析](https://qqzeng.top/2019/05/14/nsq-channel-%E6%BA%90%E7%A0%81%E7%AE%80%E6%9E%90/)
   6. [nsq 消息发送订阅源码简析](https://qqzeng.top/2019/05/15/nsq-%E6%B6%88%E6%81%AF%E5%8F%91%E9%80%81%E8%AE%A2%E9%98%85%E6%BA%90%E7%A0%81%E7%AE%80%E6%9E%90/)
+  7. [nsq diskqueue 源码简析](https://qqzeng.top/2019/05/19/nsq-diskqueue-%E6%8C%81%E4%B9%85%E5%8C%96%E5%AD%98%E5%82%A8%E6%BA%90%E7%A0%81%E7%AE%80%E6%9E%90/)
